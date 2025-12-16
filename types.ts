@@ -35,6 +35,8 @@ export interface Transaction {
   category: string;
   clientId?: string; // Link to a client
   createdBy: string;
+  exchangeRate?: number;
+  notes?: string;
 }
 
 export interface CurrencyRate {
@@ -43,4 +45,4 @@ export interface CurrencyRate {
   name: string;
 }
 
-export type ViewState = 'dashboard' | 'transactions' | 'currency' | 'users' | 'clients';
+export type ViewState = 'dashboard' | 'transactions' | 'currency' | 'users' | 'clients' | 'profile';

@@ -22,7 +22,7 @@ export const MOCK_CLIENTS: Client[] = [
 ];
 
 export const MOCK_TRANSACTIONS: Transaction[] = [
-  { id: '1', description: 'بيع محاصيل قمح', amount: 15000, currency: 'EGP', date: '2023-10-25', type: TransactionType.INCOME, category: 'زراعة', createdBy: 'أماني ريديس' },
+  { id: '1', description: 'بيع محاصيل قمح', amount: 15000, currency: 'EGP', date: '2023-10-25', type: TransactionType.INCOME, category: 'زراعة', createdBy: 'أماني ريديس', notes: 'محصول الموسم الشتوي' },
   { id: '2', description: 'ترميم أعمدة المعبد', amount: 5000, currency: 'EGP', date: '2023-10-26', type: TransactionType.EXPENSE, category: 'صيانة', clientId: '1', createdBy: 'تحارقا' },
   { id: '3', description: 'تجارة ذهب', amount: 45000, currency: 'EGP', date: '2023-10-27', type: TransactionType.INCOME, category: 'تجارة', createdBy: 'أماني ريديس' },
   { id: '4', description: 'شراء ورق بردي', amount: 1200, currency: 'EGP', date: '2023-10-28', type: TransactionType.EXPENSE, category: 'أدوات مكتبية', createdBy: 'تحارقا' },
@@ -35,4 +35,5 @@ export const INITIAL_RATES: CurrencyRate[] = [
   { code: 'EGP', rate: 48.50, name: 'جنيه مصري' },
   { code: 'SAR', rate: 3.75, name: 'ريال سعودي' },
   { code: 'AED', rate: 3.67, name: 'درهم إماراتي' },
+  { code: 'SDG', rate: 580.00, name: 'جنيه سوداني' },
 ];

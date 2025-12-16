@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Transaction, TransactionType, Client } from '../types';
 import { PlusCircle, MinusCircle } from 'lucide-react';
+import { INITIAL_RATES } from '../constants';
 
 interface Props {
   onAdd: (t: Omit<Transaction, 'id' | 'createdBy'>) => void;
@@ -14,6 +15,11 @@ const TransactionForm: React.FC<Props> = ({ onAdd, clients }) => {
   const [category, setCategory] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [clientId, setClientId] = useState('');
+  
+  // New State Fields
+  const [currency, setCurrency] = useState('EGP');
+  const [exchangeRate, setExchangeRate] = useState('');
+  const [notes, setNotes] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,9 +30,11 @@ const TransactionForm: React.FC<Props> = ({ onAdd, clients }) => {
       amount: parseFloat(amount),
       description,
       category: category || 'عام',
-      currency: 'EGP',
+      currency: currency,
       date,
-      clientId: clientId || undefined
+      clientId: clientId || undefined,
+      exchangeRate: exchangeRate ? parseFloat(exchangeRate) : undefined,
+      notes: notes || undefined
     });
 
     // Reset form
@@ -34,6 +42,9 @@ const TransactionForm: React.FC<Props> = ({ onAdd, clients }) => {
     setDescription('');
     setCategory('');
     setClientId('');
+    setExchangeRate('');
+    setNotes('');
+    setCurrency('EGP');
   };
 
   return (
@@ -71,7 +82,7 @@ const TransactionForm: React.FC<Props> = ({ onAdd, clients }) => {
         </div>
 
         <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium text-gray-600">المبلغ (EGP)</label>
+          <label className="text-sm font-medium text-gray-600">المبلغ</label>
           <input
             type="number"
             required
@@ -81,6 +92,32 @@ const TransactionForm: React.FC<Props> = ({ onAdd, clients }) => {
             onChange={(e) => setAmount(e.target.value)}
             className="border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-[#d97706] focus:border-transparent outline-none"
             placeholder="0.00"
+          />
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium text-gray-600">العملة</label>
+          <select
+            value={currency}
+            onChange={(e) => setCurrency(e.target.value)}
+            className="border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-[#d97706] focus:border-transparent outline-none bg-white"
+          >
+            {INITIAL_RATES.map(rate => (
+                <option key={rate.code} value={rate.code}>{rate.name} ({rate.code})</option>
+            ))}
+          </select>
+        </div>
+
+         <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium text-gray-600">سعر الصرف (مقابل الدولار)</label>
+          <input
+            type="number"
+            min="0"
+            step="0.001"
+            value={exchangeRate}
+            onChange={(e) => setExchangeRate(e.target.value)}
+            className="border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-[#d97706] focus:border-transparent outline-none"
+            placeholder="اختياري"
           />
         </div>
 
@@ -120,10 +157,20 @@ const TransactionForm: React.FC<Props> = ({ onAdd, clients }) => {
             </select>
         </div>
 
-        <div className="col-span-1 md:col-span-2 lg:col-span-1 flex items-end">
+        <div className="col-span-1 md:col-span-2 lg:col-span-3 flex flex-col gap-1">
+          <label className="text-sm font-medium text-gray-600">ملاحظات إضافية</label>
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            className="border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-[#d97706] focus:border-transparent outline-none h-20 resize-none"
+            placeholder="أضف أي تفاصيل أخرى هنا..."
+          />
+        </div>
+
+        <div className="col-span-1 md:col-span-3 flex items-end mt-2">
           <button
             type="submit"
-            className="w-full bg-[#d97706] hover:bg-amber-700 text-white font-bold py-2 rounded-lg transition-colors shadow-md"
+            className="w-full bg-[#d97706] hover:bg-amber-700 text-white font-bold py-3 rounded-lg transition-colors shadow-md"
           >
             حفظ السجل
           </button>

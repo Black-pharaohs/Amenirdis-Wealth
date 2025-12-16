@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LayoutGrid, ScrollText, Scale, Users, Contact, Menu, X, Pyramid, Coins } from 'lucide-react';
+import { LayoutGrid, ScrollText, Scale, Users, Contact, Menu, X, Pyramid, Coins, UserCog } from 'lucide-react';
 import { ViewState } from '../types';
 
 interface LayoutProps {
@@ -17,6 +17,7 @@ const Layout: React.FC<LayoutProps> = ({ currentView, onChangeView, children }) 
     { id: 'currency', label: 'أسعار الصرف', icon: Scale },
     { id: 'users', label: 'الحراس والمستخدمين', icon: Users },
     { id: 'clients', label: 'الرعية والعملاء', icon: Contact },
+    { id: 'profile', label: 'الملف الشخصي', icon: UserCog },
   ];
 
   return (
