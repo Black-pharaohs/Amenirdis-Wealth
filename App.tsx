@@ -7,11 +7,13 @@ import CurrencyConverter from './components/CurrencyConverter';
 import UsersList from './components/UsersList';
 import ClientsList from './components/ClientsList';
 import UserProfile from './components/UserProfile';
-import { ViewState, Transaction, User, Client } from './types';
+import { ViewState, Transaction, TransactionType, User, Client } from './types';
 import { MOCK_TRANSACTIONS, MOCK_USERS, MOCK_CLIENTS, INITIAL_RATES } from './constants';
+import { useToast } from './components/ToastContext';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<ViewState>('dashboard');
+  const { showToast } = useToast();
   
   // App State
   const [currentUser, setCurrentUser] = useState<User>(MOCK_USERS[0]);
@@ -25,21 +27,57 @@ const App: React.FC = () => {
       id: Date.now().toString(),
       createdBy: currentUser.name, // Use dynamic current user name
     };
-    setTransactions([tx, ...transactions]);
+    
+    const updatedTransactions = [tx, ...transactions];
+    setTransactions(updatedTransactions);
+
+    // Show success toast
+    showToast(
+      'تم تسجيل المعاملة في البردية',
+      `تمت إضافة "${tx.description}" بقيمة ${tx.amount.toLocaleString()} ${tx.currency}`,
+      'success',
+      tx.nubianIcon || '𓋹'
+    );
+
+    // Check budget alert
+    const monthlyBudget = Number(localStorage.getItem('amenirdis_monthly_budget') || '15000');
+    const totalExpenses = updatedTransactions
+      .filter(t => t.type === TransactionType.EXPENSE)
+      .reduce((acc, curr) => acc + curr.amount, 0);
+
+    if (totalExpenses > monthlyBudget) {
+      const excess = totalExpenses - monthlyBudget;
+      showToast(
+        'تنبيه حرج: تجاوز الميزانية الملكية!',
+        `المصروفات الحالية (${totalExpenses.toLocaleString()} EGP) تجاوزت سقف الميزانية (${monthlyBudget.toLocaleString()} EGP) بمقدار ${excess.toLocaleString()} EGP!`,
+        'danger',
+        '𓃭'
+      );
+    } else if (monthlyBudget > 0 && (totalExpenses / monthlyBudget) >= 0.85) {
+      const percent = ((totalExpenses / monthlyBudget) * 100).toFixed(1);
+      showToast(
+        'تحذير: اقتربت من حد الميزانية',
+        `وصلت المصروفات حتى الآن إلى ${percent}% من الميزانية المحددة.`,
+        'warning',
+        '𓃭'
+      );
+    }
   };
 
   const handleAddUser = (user: User) => {
     setUsers([...users, user]);
+    showToast('تمت إضافة كاتب جديد', `تم تسجيل "${user.name}" بنجاح في النظام`, 'success', '𓋴');
   };
 
   const handleAddClient = (client: Client) => {
     setClients([...clients, client]);
+    showToast('تم تسطير عميل جديد', `تمت إضافة "${client.name}" إلى قائمة المتعاملين`, 'success', '𓏎');
   };
 
   const handleUpdateProfile = (updatedUser: User) => {
     setCurrentUser(updatedUser);
-    // Also update this user in the users list
     setUsers(users.map(u => u.id === updatedUser.id ? updatedUser : u));
+    showToast('تم تحديث بيانات الملف الشخصي', 'تمت الحفظ وتحديث شارات الهوية بنجاح', 'success', '𓋹');
   };
 
   const renderContent = () => {

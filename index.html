@@ -25,21 +25,31 @@
       ::-webkit-scrollbar-thumb:hover {
         background: #b45309; 
       }
+      @keyframes toastShrink {
+        from { width: 100%; }
+        to { width: 0%; }
+      }
+      .animate-toast-shrink {
+        animation: toastShrink linear forwards;
+      }
+      
+      /* Egyptian/Nubian Geometric Pattern Overlay */
+      .nubian-pattern-bg {
+        background-color: #fcf9f2;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Cg fill='%23b45309' fill-opacity='0.04'%3E%3Cpath d='M0 0l40 40L80 0v80L40 40 0 80z'/%3E%3Cpath d='M40 0L0 40l40 40 40-40z' fill='%23d97706' fill-opacity='0.035'/%3E%3Ccircle cx='40' cy='40' r='5' fill='%2378350f' fill-opacity='0.05'/%3E%3Cpath d='M20 0l20 20L20 40 0 20zM60 0l20 20-20 20-20-20zM20 40l20 20-20 20-20-20zM60 40l20 20-20 20-20-20z' fill='%23b45309' fill-opacity='0.025'/%3E%3C/g%3E%3C/svg%3E");
+        background-repeat: repeat;
+      }
+
+      /* Subtle Nubian Geometric Frieze Top Border */
+      .nubian-frieze-top {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='12' viewBox='0 0 40 12'%3E%3Cpath d='M0 12L20 0l20 12H0z' fill='%23d97706' fill-opacity='0.15'/%3E%3Cpath d='M10 12L20 6l10 6H10z' fill='%23b45309' fill-opacity='0.2'/%3E%3C/svg%3E");
+        background-repeat: repeat-x;
+        height: 8px;
+      }
     </style>
-  <script type="importmap">
-{
-  "imports": {
-    "react/": "https://esm.sh/react@^19.2.3/",
-    "react": "https://esm.sh/react@^19.2.3",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "@google/genai": "https://esm.sh/@google/genai@^1.33.0",
-    "lucide-react": "https://esm.sh/lucide-react@^0.561.0",
-    "recharts": "https://esm.sh/recharts@^3.6.0"
-  }
-}
-</script>
-</head>
+  </head>
   <body>
     <div id="root"></div>
-  </body>
+  <script type="module" src="/index.tsx"></script>
+</body>
 </html>

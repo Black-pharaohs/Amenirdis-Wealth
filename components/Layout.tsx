@@ -103,13 +103,16 @@ const Layout: React.FC<LayoutProps> = ({ currentView, onChangeView, children }) 
           </div>
         )}
 
+        {/* Top Decorative Frieze Border */}
+        <div className="nubian-frieze-top w-full shrink-0 border-b border-amber-200/50" />
+
         {/* Main Content Area */}
-        <main className="flex-1 overflow-auto p-4 md:p-8 relative">
+        <main className="flex-1 overflow-auto p-4 md:p-8 relative nubian-pattern-bg">
            {/* Decorative Background Element */}
            <div className="absolute top-0 left-0 w-full h-full opacity-[0.03] pointer-events-none z-0 flex items-center justify-center overflow-hidden">
               <Coins size={400} />
            </div>
-           <div className="relative z-1 max-w-7xl mx-auto">
+           <div className="relative z-10 max-w-7xl mx-auto">
              {children}
            </div>
         </main>

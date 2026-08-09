@@ -33,6 +33,7 @@ export interface Transaction {
   date: string;
   type: TransactionType;
   category: string;
+  nubianIcon?: string; // Symbol from Nubian/Pharaonic heritage
   clientId?: string; // Link to a client
   createdBy: string;
   exchangeRate?: number;

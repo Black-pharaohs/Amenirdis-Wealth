@@ -28,10 +28,8 @@ const CurrencyConverter: React.FC<Props> = ({ rates }) => {
 
   useEffect(() => {
     const fetchInsight = async () => {
-        if(process.env.API_KEY) {
-            const txt = await getCurrencyInsights(base);
-            setInsight(txt);
-        }
+      const txt = await getCurrencyInsights(base);
+      setInsight(txt);
     };
     fetchInsight();
   }, [base]);

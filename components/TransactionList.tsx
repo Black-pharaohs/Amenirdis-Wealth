@@ -1,22 +1,90 @@
 import React, { useState } from 'react';
 import { Transaction, TransactionType, Client } from '../types';
-import { ArrowUpRight, ArrowDownLeft, Download, X, Calendar, Tag, User, Building2, Phone, FileText, Banknote, StickyNote, Info } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, Download, X, Calendar, Tag, User, Building2, Phone, FileText, Banknote, StickyNote, Info, TrendingUp, TrendingDown, Filter, Layers, ChevronLeft, Printer } from 'lucide-react';
+import { PdfReportModal } from './PdfReportModal';
 
 interface Props {
   transactions: Transaction[];
   clients: Client[];
 }
 
+const MONTH_NAMES_AR: Record<string, string> = {
+  '01': 'يناير',
+  '02': 'فبراير',
+  '03': 'مارس',
+  '04': 'أبريل',
+  '05': 'مايو',
+  '06': 'يونيو',
+  '07': 'يوليو',
+  '08': 'أغسطس',
+  '09': 'سبتمبر',
+  '10': 'أكتوبر',
+  '11': 'نوفمبر',
+  '12': 'ديسمبر'
+};
+
+const getArabicMonthLabel = (ym: string) => {
+  if (ym === 'all') return 'جميع الأشهر';
+  const [year, month] = ym.split('-');
+  return `${MONTH_NAMES_AR[month] || month} ${year}`;
+};
+
 const TransactionList: React.FC<Props> = ({ transactions, clients }) => {
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const [selectedMonth, setSelectedMonth] = useState<string>('all');
+  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
+
+  // Extract available unique months from transactions (formatted YYYY-MM)
+  const availableMonths = Array.from(
+    new Set(transactions.map(t => t.date.substring(0, 7)))
+  ).sort((a, b) => b.localeCompare(a)); // Sort descending (latest first)
+
+  // Filter transactions by selected month
+  const filteredTransactions = selectedMonth === 'all'
+    ? transactions
+    : transactions.filter(t => t.date.startsWith(selectedMonth));
+
+  // Compute stats for a given month
+  const getMonthStats = (monthKey: string) => {
+    const list = monthKey === 'all' 
+      ? transactions 
+      : transactions.filter(t => t.date.startsWith(monthKey));
+    
+    const income = list.filter(t => t.type === TransactionType.INCOME).reduce((sum, t) => sum + t.amount, 0);
+    const expense = list.filter(t => t.type === TransactionType.EXPENSE).reduce((sum, t) => sum + t.amount, 0);
+    const balance = income - expense;
+    return { income, expense, balance, count: list.length };
+  };
+
+  const currentStats = getMonthStats(selectedMonth);
+
+  // Compute comparative stats with previous month if a specific month is selected
+  let prevMonthKey: string | null = null;
+  if (selectedMonth !== 'all') {
+    const currentIndex = availableMonths.indexOf(selectedMonth);
+    if (currentIndex !== -1 && currentIndex < availableMonths.length - 1) {
+      prevMonthKey = availableMonths[currentIndex + 1];
+    }
+  }
+
+  const prevStats = prevMonthKey ? getMonthStats(prevMonthKey) : null;
+
+  // Percentage changes
+  const calcChange = (curr: number, prev: number) => {
+    if (!prev || prev === 0) return null;
+    return ((curr - prev) / prev) * 100;
+  };
+
+  const incomeChange = prevStats ? calcChange(currentStats.income, prevStats.income) : null;
+  const expenseChange = prevStats ? calcChange(currentStats.expense, prevStats.expense) : null;
 
   const handleExportCSV = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent row click
     // Define headers
-    const headers = ['ID', 'الوصف', 'المبلغ', 'العملة', 'سعر الصرف', 'النوع', 'الفئة', 'التاريخ', 'بواسطة', 'ملاحظات', 'العميل'];
+    const headers = ['ID', 'الوصف', 'المبلغ', 'العملة', 'سعر الصرف', 'النوع', 'الفئة', 'الأيقونة النوبية', 'التاريخ', 'بواسطة', 'ملاحظات', 'العميل'];
     
     // Map data to rows
-    const csvContent = transactions.map(t => {
+    const csvContent = filteredTransactions.map(t => {
       const clientName = t.clientId ? clients.find(c => c.id === t.clientId)?.name : '';
       return [
         t.id,
@@ -26,6 +94,7 @@ const TransactionList: React.FC<Props> = ({ transactions, clients }) => {
         t.exchangeRate || '',
         t.type === TransactionType.INCOME ? 'دخل' : 'صرف',
         t.category,
+        t.nubianIcon || '',
         t.date,
         t.createdBy,
         `"${(t.notes || '').replace(/"/g, '""')}"`,
@@ -46,7 +115,7 @@ const TransactionList: React.FC<Props> = ({ transactions, clients }) => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `amenirdis_transactions_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', `amenirdis_transactions_${selectedMonth}_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -56,33 +125,187 @@ const TransactionList: React.FC<Props> = ({ transactions, clients }) => {
 
   return (
     <>
+      {/* Month Selection & Comparative Analytics Header */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 pb-4 border-b border-gray-100">
+          <div>
+            <h3 className="text-xl font-bold text-neutral-800 flex items-center gap-2">
+              <Calendar className="text-[#d97706]" size={22} />
+              تصفح السجلات ومقارنة الأشهر
+            </h3>
+            <p className="text-xs text-gray-500 mt-1">
+              تابع حركة الأموال ومستوى نمو الثروة شهر بشهر عبر الزمن
+            </p>
+          </div>
+
+          {/* Month Selector Pills */}
+          <div className="flex flex-wrap items-center gap-1.5 bg-gray-100/80 p-1.5 rounded-xl">
+            <button
+              onClick={() => setSelectedMonth('all')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                selectedMonth === 'all'
+                  ? 'bg-[#d97706] text-white shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-white/60'
+              }`}
+            >
+              جميع الأشهر
+            </button>
+            {availableMonths.map(ym => (
+              <button
+                key={ym}
+                onClick={() => setSelectedMonth(ym)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  selectedMonth === ym
+                    ? 'bg-[#d97706] text-white shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-white/60'
+                }`}
+              >
+                {getArabicMonthLabel(ym)}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Selected Month Summary & MoM Comparison Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          {/* Income Card */}
+          <div className="bg-emerald-50/60 border border-emerald-100 rounded-xl p-4">
+            <div className="flex justify-between items-center mb-1">
+              <span className="text-xs font-semibold text-emerald-800">إجمالي الواردات (الدخل)</span>
+              <span className="p-1.5 bg-emerald-100 text-emerald-700 rounded-lg"><ArrowUpRight size={16} /></span>
+            </div>
+            <div className="text-2xl font-bold text-emerald-900 mt-1">
+              {currentStats.income.toLocaleString()} <span className="text-sm font-normal text-emerald-700">EGP</span>
+            </div>
+            {prevStats && incomeChange !== null && (
+              <div className="mt-2 text-[11px] font-semibold flex items-center gap-1">
+                {incomeChange >= 0 ? (
+                  <span className="text-emerald-700 flex items-center gap-0.5">
+                    <TrendingUp size={12} /> +{incomeChange.toFixed(1)}% مقارنة بـ {getArabicMonthLabel(prevMonthKey!)}
+                  </span>
+                ) : (
+                  <span className="text-red-600 flex items-center gap-0.5">
+                    <TrendingDown size={12} /> {incomeChange.toFixed(1)}% مقارنة بـ {getArabicMonthLabel(prevMonthKey!)}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Expense Card */}
+          <div className="bg-red-50/60 border border-red-100 rounded-xl p-4">
+            <div className="flex justify-between items-center mb-1">
+              <span className="text-xs font-semibold text-red-800">إجمالي المصروفات</span>
+              <span className="p-1.5 bg-red-100 text-red-700 rounded-lg"><ArrowDownLeft size={16} /></span>
+            </div>
+            <div className="text-2xl font-bold text-red-900 mt-1">
+              {currentStats.expense.toLocaleString()} <span className="text-sm font-normal text-red-700">EGP</span>
+            </div>
+            {prevStats && expenseChange !== null && (
+              <div className="mt-2 text-[11px] font-semibold flex items-center gap-1">
+                {expenseChange <= 0 ? (
+                  <span className="text-emerald-700 flex items-center gap-0.5">
+                    <TrendingDown size={12} /> {expenseChange.toFixed(1)}% انخفاض عن {getArabicMonthLabel(prevMonthKey!)}
+                  </span>
+                ) : (
+                  <span className="text-red-600 flex items-center gap-0.5">
+                    <TrendingUp size={12} /> +{expenseChange.toFixed(1)}% زيادة عن {getArabicMonthLabel(prevMonthKey!)}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Net Balance Card */}
+          <div className="bg-amber-50/60 border border-amber-200/80 rounded-xl p-4">
+            <div className="flex justify-between items-center mb-1">
+              <span className="text-xs font-semibold text-amber-900">صافي التدفق للفترة</span>
+              <span className="p-1.5 bg-amber-100 text-amber-800 rounded-lg"><Layers size={16} /></span>
+            </div>
+            <div className={`text-2xl font-bold mt-1 ${currentStats.balance >= 0 ? 'text-amber-900' : 'text-red-700'}`}>
+              {currentStats.balance >= 0 ? '+' : ''}{currentStats.balance.toLocaleString()} <span className="text-sm font-normal text-amber-800">EGP</span>
+            </div>
+            <div className="mt-2 text-[11px] text-amber-800 font-medium">
+              عدد السجلات: <span className="font-bold">{currentStats.count} معاملة</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Timeline Bar Comparison */}
+        {availableMonths.length > 1 && (
+          <div className="mt-4 pt-4 border-t border-gray-100">
+            <h4 className="text-xs font-bold text-gray-500 mb-3 flex items-center gap-1">
+              <Filter size={12} /> مقارنة سريعة بين كافة الأشهر المتاحة:
+            </h4>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {availableMonths.map(ym => {
+                const s = getMonthStats(ym);
+                const isSel = selectedMonth === ym;
+                return (
+                  <div
+                    key={ym}
+                    onClick={() => setSelectedMonth(ym)}
+                    className={`p-2.5 rounded-xl border cursor-pointer transition-all ${
+                      isSel
+                        ? 'bg-amber-100/90 border-[#d97706] ring-1 ring-[#d97706]'
+                        : 'bg-gray-50 hover:bg-gray-100 border-gray-200'
+                    }`}
+                  >
+                    <div className="text-xs font-bold text-neutral-800">{getArabicMonthLabel(ym)}</div>
+                    <div className="flex justify-between items-center text-[10px] text-gray-500 mt-1">
+                      <span className="text-emerald-600 font-semibold">+{s.income.toLocaleString()}</span>
+                      <span className="text-red-600 font-semibold">-{s.expense.toLocaleString()}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-          <h3 className="font-bold text-gray-700">أرشيف المعاملات</h3>
-          <button 
-            onClick={handleExportCSV}
-            className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-600 hover:text-[#d97706] hover:border-[#d97706] transition-colors shadow-sm"
-            title="تحميل كملف CSV"
-          >
-            <Download size={16} />
-            <span>تصدير CSV</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <h3 className="font-bold text-gray-700">أرشيف المعاملات</h3>
+            <span className="text-xs font-bold text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-full">
+              {getArabicMonthLabel(selectedMonth)} ({filteredTransactions.length})
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsPdfModalOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white rounded-lg text-sm font-bold shadow-sm transition-all"
+              title="تصدير تقرير PDF منسق بأسلوب التراث النوبي"
+            >
+              <FileText size={16} />
+              <span>تصدير تقرير PDF</span>
+            </button>
+            <button 
+              onClick={handleExportCSV}
+              className="flex items-center gap-1.5 px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:text-[#d97706] hover:border-[#d97706] transition-colors shadow-sm"
+              title="تحميل كملف CSV"
+            >
+              <Download size={16} />
+              <span>تصدير CSV</span>
+            </button>
+          </div>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-right">
-            <thead className="bg-neutral-50 text-neutral-600 font-medium">
+            <thead className="bg-neutral-50 text-neutral-600 font-medium text-xs">
               <tr>
                 <th className="p-4">النوع</th>
                 <th className="p-4">الوصف</th>
-                <th className="p-4">الفئة</th>
+                <th className="p-4">الفئة والأيقونة النوبية</th>
                 <th className="p-4">التاريخ</th>
                 <th className="p-4">المبلغ</th>
                 <th className="p-4">بواسطة</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
-              {transactions.map((t) => (
+            <tbody className="divide-y divide-gray-100 text-sm">
+              {filteredTransactions.map((t) => (
                 <tr 
                     key={t.id} 
                     onClick={() => setSelectedTransaction(t)}
@@ -107,18 +330,23 @@ const TransactionList: React.FC<Props> = ({ transactions, clients }) => {
                           </span>
                       )}
                   </td>
-                  <td className="p-4 text-gray-500">{t.category}</td>
-                  <td className="p-4 text-gray-500">{t.date}</td>
+                  <td className="p-4 text-gray-700 font-medium">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 border border-amber-200/80 rounded-lg text-xs">
+                      {t.nubianIcon && <span className="text-base leading-none">{t.nubianIcon}</span>}
+                      <span>{t.category}</span>
+                    </span>
+                  </td>
+                  <td className="p-4 text-gray-500 text-xs">{t.date}</td>
                   <td className={`p-4 font-bold dir-ltr text-right ${t.type === TransactionType.INCOME ? 'text-green-600' : 'text-red-600'}`}>
                     {t.type === TransactionType.INCOME ? '+' : '-'}{t.amount.toLocaleString()} {t.currency}
                   </td>
-                  <td className="p-4 text-gray-500 text-sm">{t.createdBy}</td>
+                  <td className="p-4 text-gray-500 text-xs">{t.createdBy}</td>
                 </tr>
               ))}
-              {transactions.length === 0 && (
+              {filteredTransactions.length === 0 && (
                   <tr>
                       <td colSpan={6} className="p-8 text-center text-gray-400">
-                          لا توجد سجلات في البردية بعد.
+                          لا توجد سجلات لـ {getArabicMonthLabel(selectedMonth)} في البردية بعد.
                       </td>
                   </tr>
               )}
@@ -164,9 +392,16 @@ const TransactionList: React.FC<Props> = ({ transactions, clients }) => {
                 <div className="grid grid-cols-2 gap-4">
                     <div className="p-3 rounded-lg border border-gray-100 hover:border-[#d97706]/30 transition-colors">
                         <div className="flex items-center gap-2 text-gray-400 text-xs mb-1">
-                            <Tag size={12} /> الفئة
+                            <Tag size={12} /> الفئة والأيقونة
                         </div>
-                        <div className="font-semibold text-gray-800">{selectedTransaction.category}</div>
+                        <div className="font-semibold text-gray-800 flex items-center gap-2">
+                          {selectedTransaction.nubianIcon && (
+                            <span className="text-xl bg-amber-50 p-1 rounded border border-amber-200 leading-none">
+                              {selectedTransaction.nubianIcon}
+                            </span>
+                          )}
+                          <span>{selectedTransaction.category}</span>
+                        </div>
                     </div>
                     <div className="p-3 rounded-lg border border-gray-100 hover:border-[#d97706]/30 transition-colors">
                         <div className="flex items-center gap-2 text-gray-400 text-xs mb-1">
@@ -250,6 +485,15 @@ const TransactionList: React.FC<Props> = ({ transactions, clients }) => {
            </div>
         </div>
       )}
+
+      {/* Nubian PDF Report Export Modal */}
+      <PdfReportModal
+        isOpen={isPdfModalOpen}
+        onClose={() => setIsPdfModalOpen(false)}
+        transactions={filteredTransactions}
+        clients={clients}
+        monthLabel={getArabicMonthLabel(selectedMonth)}
+      />
     </>
   );
 };

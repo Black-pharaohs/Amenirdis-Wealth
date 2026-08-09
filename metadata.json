@@ -1,5 +1,8 @@
 {
   "name": "Amenirdis Wealth",
   "description": "تطبيق إدارة مالية مستوحى من حكمة الملكة النوبية أماني ريديس، يجمع بين دقة الحضارة الفرعونية والتكنولوجيا الحديثة لإدارة الثروات.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }
